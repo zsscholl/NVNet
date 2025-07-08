@@ -63,14 +63,12 @@ class NVNet(nn.Module):
         self.DecodeX = NVNet.DecodeBranch()
         self.DecodeY = NVNet.DecodeBranch()
         # self.DecodeZ = NVNet.DecodeBranch()
-    def forward(self, x):
-        # gap = x.shape[-1] - DATA_CONFIG['SHAPE']
-        # slice_start, slice_end = gap//2, gap//2+DATA_CONFIG['SHAPE']
 
+    def forward(self, x):
         encoded = self.Encode(x)
-        x_decoded = self.DecodeX(encoded) #[:, :, slice_start:slice_end, slice_start:slice_end]
-        y_decoded = self.DecodeY(encoded) #[:, :, slice_start:slice_end, slice_start:slice_end]
-        # z_decoded = self.DecodeZ(encoded) #[:, :, slice_start:slice_end, slice_start:slice_end]
+        x_decoded = self.DecodeX(encoded)
+        y_decoded = self.DecodeY(encoded)
+        # z_decoded = self.DecodeZ(encoded)
         # print(f'output shape is {x_decoded.shape}')
         return torch.cat((x_decoded, y_decoded, torch.zeros_like(y_decoded)), dim=1)
 

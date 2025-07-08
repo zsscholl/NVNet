@@ -1,47 +1,76 @@
 import torch
 import torch.nn as nn
-import numpy as np
 from backend.config import *
 from backend.utils import *
 from backend.model import *
 from backend.data_initializer import *
 from backend.forward_transformation import *
-from tqdm import tqdm
 import torchmetrics
+import numpy as np
+import math
+import matplotlib
+import matplotlib.pyplot as plt
+from tqdm import tqdm
 
-model = NVNet().to(REC_CONFIG['DEVICE'])
-transform = ForwardTransform(512)
-padded_raw = PadStage()(TORCH_DATA)*1000
-bfield = transform.NVtoStray(padded_raw).to(device=REC_CONFIG['DEVICE'])
-plt.imshow(bfield.cpu().detach()[0, 0], cmap='bwr')
-plt.colorbar(label="mT")
-plt.show()
+matplotlib.use('TkAgg')
 
-loss_fn = REC_CONFIG['ML_PARAMS']['LOSS_FUNCTION']
-optimizer = REC_CONFIG['ML_PARAMS']['OPTIMIZER'](model.parameters())
-scheduler = REC_CONFIG['ML_PARAMS']['SCHEDULER'](optimizer)
+class ProcessNV():
+    def __init__(self, dataset, epochs, is_nv=False, display_graphs=False):
+        super().__init__()
+        self.model = NVNet().to(REC_CONFIG['DEVICE'])
+        self.loss_fn = REC_CONFIG['ML_PARAMS']['LOSS_FUNCTION']
+        self.losses = dict()
+        self.optimizer = REC_CONFIG['ML_PARAMS']['OPTIMIZER'](self.model.parameters())
+        self.scheduler = REC_CONFIG['ML_PARAMS']['SCHEDULER'](self.optimizer)
 
-model.train()
-for epoch in tqdm(range(REC_CONFIG['ML_PARAMS']['EPOCHS'])):
-    optimizer.zero_grad()
-    prediction = model(bfield)
-    feedback = transform.StrayFromMag(prediction)
-    loss = loss_fn(prediction, bfield)
-    loss.backward()
-    optimizer.step()
-    scheduler.step(loss)
+        shape = dataset.shape[-1]
+        shape_ceil = int(2**math.ceil(np.log2(shape)))
+        gap = shape_ceil - shape
+        slice_start, slice_end = gap//2, gap//2+shape
+        self.data = nn.ReflectionPad2d(gap//2)(dataset)
+        if self.data.shape[-1] != shape_ceil:
+            self.data = nn.ReflectionPad2d((1, 0, 1, 0))(self.data)
 
-    if epoch % 100 == 0:
-        print(f'Epoch: {epoch}, Loss = {loss}')
+        self.xyz = None
+        self.propagator = ForwardTransform(shape_ceil).to(device=REC_CONFIG['DEVICE'])
+        self.fig, self.ax = None, None
 
-model.eval()
-with torch.no_grad():
-    final_output = model(bfield)
-    # final_stray = transform.StrayFromMag(final_output)
+        if display_graphs is True:
+            self.fig, self.ax = plt.subplots(3, 3)
+            im_raw_x = self.ax[0,0].imshow(self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_raw_y = self.ax[0,1].imshow(self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_ray_z = self.ax[0,2].imshow(self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_mag_x = self.ax[1,0].imshow(self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_mag_y = self.ax[1,1].imshow(self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_mag_z = self.ax[1,2].imshow(self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_rec_x = self.ax[2,0].imshow(self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_rec_y = self.ax[2,1].imshow(self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+            im_rec_z = self.ax[2,2].imshow(self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
 
-plot_magnetic_field_map(toNumpy(final_output)[0], 'final out x')
-# plot_magnetic_field_map(toNumpy(final_stray)[0][0], 'final stray x')
-plot_magnetic_field_map(toNumpy(final_output)[1], 'final out y')
-# plot_magnetic_field_map(toNumpy(final_stray)[0][1], 'final stray y')
-# plot_magnetic_field_map(toNumpy(final_output)[0][2], 'final out z')
-# plot_magnetic_field_map(toNumpy(final_stray)[0][2], 'final stray z')
+        if is_nv is False:
+            self.xyz = self.data
+        else:
+            self.xyz = self.propagator.NVtoStray(self.data).to(device=REC_CONFIG['DEVICE'])
+
+        for epoch in tqdm(range(epochs)):
+            self.optimizer.zero_grad()
+            prediction = self.model(self.xyz)
+            feedback = self.propagator.StrayFromMag(prediction)
+            loss = self.loss_fn(feedback, self.xyz)
+            self.losses.update({epoch: loss.item()})
+            loss.backward()
+            self.optimizer.step()
+            self.scheduler.step(loss)
+
+            if epoch % 100 == 0:
+                print(f'Epoch: {epoch}, Loss = {self.losses[epoch]}')
+                if self.ax is not None:
+                    im_mag_x.set_data(prediction[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
+                    im_mag_y.set_data(prediction[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
+                    im_mag_z.set_data(prediction[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
+                    im_rec_x.set_data(feedback[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
+                    im_rec_y.set_data(feedback[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
+                    im_rec_z.set_data(feedback[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
+                    self.fig.canvas.draw()
+                    self.fig.canvas.flush_events()
+                    plt.pause(0.001)

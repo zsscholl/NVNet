@@ -29,7 +29,7 @@ class ForwardTransform(nn.Module):
         ex = np.cos(DATA_CONFIG['NV_PARAMS']['THETA'])*np.sin(DATA_CONFIG['NV_PARAMS']['PHI'])
         ey = np.sin(DATA_CONFIG['NV_PARAMS']['THETA'])*np.sin(DATA_CONFIG['NV_PARAMS']['PHI'])
         ez = np.cos(DATA_CONFIG['NV_PARAMS']['PHI'])
-        denom = (1j*kx*ex + 1j*ky*ey-k*ez)
+        denom = (1j*kx*ex+1j*ky*ey-k*ez)
 
         nv_fft = torch.fft.fft2(nv)
         bx_fft = 1j*kx*nv_fft/denom
