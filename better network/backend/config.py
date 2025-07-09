@@ -8,18 +8,18 @@ DATA_CONFIG['SHAPE'] = 256 #300 #only square inputs are allowed
 DATA_CONFIG['NV_PARAMS'] = dict()
 DATA_CONFIG['NV_PARAMS']['THETA'] = np.deg2rad(54.7)
 DATA_CONFIG['NV_PARAMS']['PHI'] = np.deg2rad(135)
-DATA_CONFIG['NV_PARAMS']['SCAN_HEIGHT'] = 50e-9
+DATA_CONFIG['NV_PARAMS']['SCAN_HEIGHT'] = 10e-9
 
 REC_CONFIG = dict()
 REC_CONFIG['ML_PARAMS'] = dict()
 REC_CONFIG['DEVICE'] = 'cuda' if torch.cuda.is_available() else 'cpu'
 REC_CONFIG['ML_PARAMS']['LOSS_FUNCTION'] = nn.MSELoss()
-REC_CONFIG['ML_PARAMS']['OPTIMIZER'] = lambda params: torch.optim.Adam(params, lr=0.0005)
+REC_CONFIG['ML_PARAMS']['OPTIMIZER'] = lambda params: torch.optim.AdamW(params, lr=0.001)
 REC_CONFIG['ML_PARAMS']['SCHEDULER'] = lambda opt: torch.optim.lr_scheduler.ReduceLROnPlateau(
     opt,
     mode='min',
     factor=0.8,
-    patience=200,
+    patience=500,
     )
 REC_CONFIG['PROP_PARAMS'] = dict()
 REC_CONFIG['PROP_PARAMS']['K_CUTOFF'] = 10e12

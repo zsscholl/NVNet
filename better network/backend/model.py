@@ -72,4 +72,59 @@ class NVNet(nn.Module):
         # print(f'output shape is {x_decoded.shape}')
         return torch.cat((x_decoded, y_decoded, torch.zeros_like(y_decoded)), dim=1)
 
+# I've set the z output to 0 because I've had issues forward transforming a given magnetization into the correct stray
+# field when it's not 0.
 
+class SmartNet(nn.Module):
+    class Encode(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.encode = nn.Sequential(
+                nn.Conv2d(in_channels=3, out_channels=8, kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(8),
+                nn.LeakyReLU(),
+                nn.Conv2d(in_channels=8, out_channels=16, kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(16),
+                nn.LeakyReLU(),
+                nn.Conv2d(in_channels=16, out_channels=32, kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(32),
+                nn.LeakyReLU(),
+                nn.Conv2d(in_channels=32, out_channels=64,kernel_size=5, stride=2, padding=2),
+                nn.BatchNorm2d(64),
+                nn.LeakyReLU(),
+            )
+        def forward(self, x):
+            return self.encode(x)
+
+    class Decode(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.decode = nn.Sequential(
+                nn.ConvTranspose2d(64, 32, kernel_size=5, stride=2, padding=2, output_padding=1),
+                nn.BatchNorm2d(32),
+                nn.LeakyReLU(),
+                nn.ConvTranspose2d(32, 16, kernel_size=5, stride=2, padding=2, output_padding=1),
+                nn.BatchNorm2d(16),
+                nn.LeakyReLU(),
+                nn.ConvTranspose2d(16, 8, kernel_size=5, stride=2, padding=2, output_padding=1),
+                nn.BatchNorm2d(8),
+                nn.LeakyReLU(),
+                nn.ConvTranspose2d(8, 1, kernel_size=5, stride=2, padding=2, output_padding=1),
+                nn.ConvTranspose2d(1, 1, kernel_size=1, stride=1, padding=0, output_padding=0),
+            )
+        def forward(self, x):
+            return self.decode(x)
+
+    def __init__(self):
+        super().__init__()
+        self.encode = SmartNet.Encode()
+        self.decode_x = SmartNet.Decode()
+        self.decode_y = SmartNet.Decode()
+        # self.decode_z = SmartNet.Decode()
+
+    def forward(self, x):
+        enc = self.encode(x)
+        x = self.decode_x(enc)
+        y = self.decode_y(enc)
+        # z = self.decode_z(enc)
+        return torch.cat((x, y, torch.zeros_like(y)), dim=1)

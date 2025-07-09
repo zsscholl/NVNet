@@ -4,6 +4,9 @@ import torch.nn as nn
 import scipy as scp
 from .config import *
 
+# I've found that using class methods is much faster as it avoids redundant computations. Also, switching the forward
+# transformation into actual matrix multiplication is much faster too.
+
 class ForwardTransform(nn.Module):
     def __init__(self, pixel_scale):
         super().__init__()
@@ -76,5 +79,5 @@ class ForwardTransform(nn.Module):
         mag_fft_permuted = mag_vec_fft.permute(0, 2, 3, 1).unsqueeze(-1)  # (N, H, W, 3, 1)
         stray_vec_fft_permuted = mat @ mag_fft_permuted
         stray_vec_fft = stray_vec_fft_permuted.squeeze(-1).permute(0, 3, 1, 2)
-        stray_vec_real = torch.real(torch.fft.ifft2(stray_vec_fft, norm='ortho')).to(dtype=torch.float32)
+        stray_vec_real = torch.fft.ifft2(stray_vec_fft, norm='ortho').to(dtype=torch.float32)
         return stray_vec_real

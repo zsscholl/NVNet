@@ -12,12 +12,21 @@ import matplotlib
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-matplotlib.use('TkAgg')
+matplotlib.use('TkAgg') #Necessary for live viewing of model progress (at least in my IDE)
+# This model takes the input data and pads it by repeated reflection until its new shape is the closest power of 2
+# (i.e. dataset of size 300 is padded until it reaches size 512)
+# The model only takes in square datasets
+# I've found that this helps with reconstruction artifacts
+# If 'is_nv' is set to false, the model accepts a 1x3xLENGTHxLENGTH tensor containing the stray field data for X, Y,
+# and Z. This is for when I feed it simulated mumax3 data.
+# If 'is_nv' is True, it takes in a 1x1xLENGTHxLENGTH dataset and extracts the stray field according to the NV axis
+# specified in the config file.
+# 'display_graphs' determines if graphs showing model progress in real time are shown.
 
 class ProcessNV():
     def __init__(self, dataset, epochs, is_nv=False, display_graphs=False):
         super().__init__()
-        self.model = NVNet().to(REC_CONFIG['DEVICE'])
+        self.model = SmartNet().to(REC_CONFIG['DEVICE'])
         self.loss_fn = REC_CONFIG['ML_PARAMS']['LOSS_FUNCTION']
         self.losses = dict()
         self.optimizer = REC_CONFIG['ML_PARAMS']['OPTIMIZER'](self.model.parameters())
@@ -54,9 +63,13 @@ class ProcessNV():
 
         for epoch in tqdm(range(epochs)):
             self.optimizer.zero_grad()
+
             prediction = self.model(self.xyz)
             feedback = self.propagator.StrayFromMag(prediction)
-            loss = self.loss_fn(feedback, self.xyz)
+            scale_factor = prediction.std()/feedback.std()
+            feedback = feedback*scale_factor
+            loss = self.loss_fn(self.xyz, feedback)/(1e-18 / 9.27e-24)
+
             self.losses.update({epoch: loss.item()})
             loss.backward()
             self.optimizer.step()
@@ -74,3 +87,5 @@ class ProcessNV():
                     self.fig.canvas.draw()
                     self.fig.canvas.flush_events()
                     plt.pause(0.001)
+
+test = ProcessNV(TORCH_DATA[:, :, 100:155, 100:155], 5000, is_nv=False, display_graphs=True)

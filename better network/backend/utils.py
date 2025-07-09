@@ -4,20 +4,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .config import *
 
-class PadStage(nn.Module):
-    def __init__(self):
+class LivePlot():
+    def __init__(self, raw, slice_start, slice_end):
         super().__init__()
-        if DATA_CONFIG['SHAPE'] <= 128:
-            self.gap = 128 - DATA_CONFIG['SHAPE']
-        elif 128 < DATA_CONFIG['SHAPE'] <= 256:
-            self.gap = 256 - DATA_CONFIG['SHAPE']
-        elif 256 < DATA_CONFIG['SHAPE'] <= 512:
-            self.gap = 512 - DATA_CONFIG['SHAPE']
-        else:
-            print('size error')
+        self.fig, self.ax = plt.subplots(3, 3)
+        self.data = raw
+        self.start = slice_start
+        self.end = slice_end
+        self.im_raw_x = self.ax[0, 0].imshow(
+            self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_raw_y = self.ax[0, 1].imshow(
+            self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_ray_z = self.ax[0, 2].imshow(
+            self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_mag_x = self.ax[1, 0].imshow(
+            self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_mag_y = self.ax[1, 1].imshow(
+            self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_mag_z = self.ax[1, 2].imshow(
+            self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_rec_x = self.ax[2, 0].imshow(
+            self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_rec_y = self.ax[2, 1].imshow(
+            self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
+        self.im_rec_z = self.ax[2, 2].imshow(
+            self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
 
-    def forward(self, x):
-        return nn.ReflectionPad2d(self.gap // 2)(x)
+    def Render(self, prediction, feedback):
+        super().__init__()
+        self.im_mag_x.set_data(prediction[0, 0, self.start:self.end, self.start:self.end].cpu().detach().numpy())
+        self.im_mag_y.set_data(prediction[0, 1, self.start:self.end, self.start:self.end].cpu().detach().numpy())
+        self.im_mag_z.set_data(prediction[0, 2, self.start:self.end, self.start:self.end].cpu().detach().numpy())
+        self.im_rec_x.set_data(feedback[0, 0, self.start:self.end, self.start:self.end].cpu().detach().numpy())
+        self.im_rec_y.set_data(feedback[0, 1, self.start:self.end, self.start:self.end].cpu().detach().numpy())
+        self.im_rec_z.set_data(feedback[0, 2, self.start:self.end, self.start:self.end].cpu().detach().numpy())
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        plt.pause(0.001)
 
 def toNumpy(tensor):
     return np.squeeze(tensor.cpu().detach().numpy())
