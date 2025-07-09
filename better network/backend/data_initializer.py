@@ -11,3 +11,6 @@ TORCH_DATA[:, 2, :, :] = torch.zeros_like(TORCH_DATA[:, 2, :, :])
 
 MAG_RAW = np.load(r'C:\Users\zande\PycharmProjects\ANL2025\better network\data\neel_mag1.npy')
 TORCH_MAG = torch.from_numpy(MAG_RAW).transpose(0, 1).to(device=REC_CONFIG['DEVICE'])
+
+IMRE_RAW = np.load(r'C:\Users\zande\PycharmProjects\ANL2025\better network\data\gwys.npy')
+TORCH_IMRE = torch.from_numpy(IMRE_RAW).unsqueeze(0).unsqueeze(0).to(device=REC_CONFIG['DEVICE'])*1000

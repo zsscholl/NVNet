@@ -12,6 +12,7 @@ class ForwardTransform(nn.Module):
         super().__init__()
         self.kx, self.ky, self.k, self.matrix = None, None, None, None
         self.pixel_scale = pixel_scale
+        self.nv_x, self.nv_y, self.nv_z = None, None, None
 
     def InitializeKSpace(self):
         if self.k is not None: return
@@ -28,11 +29,10 @@ class ForwardTransform(nn.Module):
     def NVtoStray(self, nv):
         self.InitializeKSpace()
         kx, ky, k = self.k, self.kx, self.ky
-
-        ex = np.cos(DATA_CONFIG['NV_PARAMS']['THETA'])*np.sin(DATA_CONFIG['NV_PARAMS']['PHI'])
-        ey = np.sin(DATA_CONFIG['NV_PARAMS']['THETA'])*np.sin(DATA_CONFIG['NV_PARAMS']['PHI'])
-        ez = np.cos(DATA_CONFIG['NV_PARAMS']['PHI'])
-        denom = (1j*kx*ex+1j*ky*ey-k*ez)
+        self.nv_x = np.cos(DATA_CONFIG['NV_PARAMS']['THETA'])*np.sin(DATA_CONFIG['NV_PARAMS']['PHI'])
+        self.nv_y = np.sin(DATA_CONFIG['NV_PARAMS']['THETA'])*np.sin(DATA_CONFIG['NV_PARAMS']['PHI'])
+        self.nv_z = np.cos(DATA_CONFIG['NV_PARAMS']['PHI'])
+        denom = (1j*kx*self.nv_x+1j*ky*self.nv_y-k*self.nv_z)
 
         nv_fft = torch.fft.fft2(nv)
         bx_fft = 1j*kx*nv_fft/denom
@@ -79,5 +79,5 @@ class ForwardTransform(nn.Module):
         mag_fft_permuted = mag_vec_fft.permute(0, 2, 3, 1).unsqueeze(-1)  # (N, H, W, 3, 1)
         stray_vec_fft_permuted = mat @ mag_fft_permuted
         stray_vec_fft = stray_vec_fft_permuted.squeeze(-1).permute(0, 3, 1, 2)
-        stray_vec_real = torch.fft.ifft2(stray_vec_fft, norm='ortho').to(dtype=torch.float32)
+        stray_vec_real = torch.real(torch.fft.ifft2(stray_vec_fft, norm='ortho')).to(dtype=torch.float32)
         return stray_vec_real

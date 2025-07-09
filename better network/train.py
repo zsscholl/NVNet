@@ -11,6 +11,10 @@ import math
 import matplotlib
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from backend.masking import *
+
+# mask_preshape = torch_smooth_mask[:, :, 115:195, 90:170].to(device=REC_CONFIG['DEVICE']).float()
+# MASK = nn.functional.pad(mask_preshape, pad = (24,24,24,24), mode='constant', value=0).float()
 
 matplotlib.use('TkAgg') #Necessary for live viewing of model progress (at least in my IDE)
 # This model takes the input data and pads it by repeated reflection until its new shape is the closest power of 2
@@ -24,7 +28,7 @@ matplotlib.use('TkAgg') #Necessary for live viewing of model progress (at least 
 # 'display_graphs' determines if graphs showing model progress in real time are shown.
 
 class ProcessNV():
-    def __init__(self, dataset, epochs, is_nv=False, display_graphs=False):
+    def __init__(self, dataset, epochs, is_nv=False, display_live_graphs=False):
         super().__init__()
         self.model = SmartNet().to(REC_CONFIG['DEVICE'])
         self.loss_fn = REC_CONFIG['ML_PARAMS']['LOSS_FUNCTION']
@@ -42,24 +46,13 @@ class ProcessNV():
 
         self.xyz = None
         self.propagator = ForwardTransform(shape_ceil).to(device=REC_CONFIG['DEVICE'])
-        self.fig, self.ax = None, None
-
-        if display_graphs is True:
-            self.fig, self.ax = plt.subplots(3, 3)
-            im_raw_x = self.ax[0,0].imshow(self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_raw_y = self.ax[0,1].imshow(self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_ray_z = self.ax[0,2].imshow(self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_mag_x = self.ax[1,0].imshow(self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_mag_y = self.ax[1,1].imshow(self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_mag_z = self.ax[1,2].imshow(self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_rec_x = self.ax[2,0].imshow(self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_rec_y = self.ax[2,1].imshow(self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-            im_rec_z = self.ax[2,2].imshow(self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
 
         if is_nv is False:
             self.xyz = self.data
+            graph = LivePlot(self.data, slice_start, slice_end)
         else:
             self.xyz = self.propagator.NVtoStray(self.data).to(device=REC_CONFIG['DEVICE'])
+            graph = LivePlot(self.xyz, slice_start, slice_end)
 
         for epoch in tqdm(range(epochs)):
             self.optimizer.zero_grad()
@@ -68,7 +61,7 @@ class ProcessNV():
             feedback = self.propagator.StrayFromMag(prediction)
             scale_factor = prediction.std()/feedback.std()
             feedback = feedback*scale_factor
-            loss = self.loss_fn(self.xyz, feedback)/(1e-18 / 9.27e-24)
+            loss = self.loss_fn(self.xyz[:, 0:1, :, :], feedback[:, 0:1, :, :])/(1e-18 / 9.27e-24)
 
             self.losses.update({epoch: loss.item()})
             loss.backward()
@@ -77,15 +70,15 @@ class ProcessNV():
 
             if epoch % 100 == 0:
                 print(f'Epoch: {epoch}, Loss = {self.losses[epoch]}')
-                if self.ax is not None:
-                    im_mag_x.set_data(prediction[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
-                    im_mag_y.set_data(prediction[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
-                    im_mag_z.set_data(prediction[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
-                    im_rec_x.set_data(feedback[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
-                    im_rec_y.set_data(feedback[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
-                    im_rec_z.set_data(feedback[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy())
-                    self.fig.canvas.draw()
-                    self.fig.canvas.flush_events()
-                    plt.pause(0.001)
+                if display_live_graphs:
+                    graph.Render(prediction, feedback)
 
-test = ProcessNV(TORCH_DATA[:, :, 100:155, 100:155], 5000, is_nv=False, display_graphs=True)
+        self.model.eval()
+        with torch.no_grad():
+            prediction = self.model(self.xyz)
+            feedback = self.propagator.StrayFromMag(prediction)
+        graph.Render(prediction, feedback)
+        plt.show()
+
+# test = ProcessNV(TORCH_DATA, 5000, is_nv=False, display_live_graphs=True)
+nv_test = ProcessNV(TORCH_IMRE, 5000, is_nv=True, display_live_graphs=True)

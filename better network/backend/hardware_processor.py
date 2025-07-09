@@ -16,7 +16,7 @@ def lorentzian(freq, A1, center1, FWHM1, B, C):
     return A1/(1+((freq-center1)/FWHM1)**2)+B*freq+C
 
 fit_params, fit_covar = scp.optimize.curve_fit(lorentzian, spectra[0,0], counts[0,0], initial_params)
-print(fit_params)
+# print(fit_params)
 plt.scatter(spectra[0,0], counts[0,0], color='red')
 plt.plot(spectra[0,0], lorentzian(spectra[0,0], *fit_params), color='blue')
 plt.show()
