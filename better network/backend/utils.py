@@ -4,55 +4,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from .config import *
 
-class LivePlot():
-    def __init__(self, raw, slice_start, slice_end):
-        super().__init__()
-        self.fig, self.ax = plt.subplots(3, 3)
-        self.data = raw
-        self.start = slice_start
-        self.end = slice_end
-        self.im_raw_x = self.ax[0, 0].imshow(
-            self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_raw_y = self.ax[0, 1].imshow(
-            self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_ray_z = self.ax[0, 2].imshow(
-            self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_mag_x = self.ax[1, 0].imshow(
-            self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_mag_y = self.ax[1, 1].imshow(
-            self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_mag_z = self.ax[1, 2].imshow(
-            self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_rec_x = self.ax[2, 0].imshow(
-            self.data[0, 0, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_rec_y = self.ax[2, 1].imshow(
-            self.data[0, 1, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-        self.im_rec_z = self.ax[2, 2].imshow(
-            self.data[0, 2, slice_start:slice_end, slice_start:slice_end].cpu().detach().numpy(), cmap='bwr')
-
-    def Render(self, prediction, feedback):
-        super().__init__()
-        self.im_mag_x.set_data(prediction[0, 0, self.start:self.end, self.start:self.end].cpu().detach().numpy())
-        self.im_mag_y.set_data(prediction[0, 1, self.start:self.end, self.start:self.end].cpu().detach().numpy())
-        self.im_mag_z.set_data(prediction[0, 2, self.start:self.end, self.start:self.end].cpu().detach().numpy())
-        self.im_rec_x.set_data(feedback[0, 0, self.start:self.end, self.start:self.end].cpu().detach().numpy())
-        self.im_rec_y.set_data(feedback[0, 1, self.start:self.end, self.start:self.end].cpu().detach().numpy())
-        self.im_rec_z.set_data(feedback[0, 2, self.start:self.end, self.start:self.end].cpu().detach().numpy())
-        self.fig.canvas.draw()
-        self.fig.canvas.flush_events()
-        plt.pause(0.001)
-
 class PlotML():
-    def __init__(self, input):
-        self.fig, self.ax = plt.subplots(1, 3)
-        self.stray = self.ax[0].imshow(input[0,0].cpu().detach().numpy(), cmap='bwr')
-        self.mag = self.ax[1].imshow(input[0,0].cpu().detach().numpy(), cmap='bwr')
-        self.rec = self.ax[2].imshow(input[0,0].cpu().detach().numpy(), cmap='bwr')
+    def __init__(self, input_x, input_y):
+        self.fig, self.ax = plt.subplots(2, 3)
+        self.stray_x = self.ax[0, 0].imshow(input_x[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.mag_x = self.ax[0, 1].imshow(input_x[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.rec_x = self.ax[0, 2].imshow(input_x[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.stray_y = self.ax[1, 0].imshow(input_y[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.mag_y = self.ax[1, 1].imshow(input_y[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.rec_y = self.ax[1, 2].imshow(input_y[0,0].cpu().detach().numpy(), cmap='bwr')
 
-    def Render(self, model_output, propagated_output):
+    def Render(self, model_y, propagated_y, model_x, propagated_x):
         super().__init__()
-        self.mag.set_data(model_output[0,0].cpu().detach().numpy())
-        self.rec.set_data(propagated_output[0,0].cpu().detach().numpy())
+        self.mag_x.set_data(model_x[0,0].cpu().detach().numpy())
+        self.rec_x.set_data(propagated_x[0,0].cpu().detach().numpy())
+        self.mag_y.set_data(model_y[0, 0].cpu().detach().numpy())
+        self.rec_y.set_data(propagated_y[0, 0].cpu().detach().numpy())
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
         plt.pause(0.001)

@@ -5,7 +5,7 @@ import scipy as scp
 import torch
 import torchvision as tv
 
-rgb_img = cv2.imread(r'C:\Users\zande\PycharmProjects\ANL2025\better network\data\skyrmion_mask.png')
+rgb_img = cv2.imread(r'C:\Users\zande\PycharmProjects\ANL2025\better network\data\skyrmion_64.png')
 gray_img = cv2.cvtColor(rgb_img, cv2.COLOR_BGR2GRAY)/256
 torch_mask = torch.from_numpy(gray_img).unsqueeze(0).unsqueeze(0)
-torch_smooth_mask = tv.transforms.functional.gaussian_blur(torch_mask, 3)
+torch_smooth_mask = tv.transforms.functional.gaussian_blur(torch_mask, 5)

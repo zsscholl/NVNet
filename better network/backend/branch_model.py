@@ -7,8 +7,8 @@ class UBranch(nn.Module):
     class Encode(nn.Module):
         def __init__(self):
             super().__init__()
-            self.pre_process = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=2, padding=2)
-            self.mask_conv = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=2, padding=2)
+            self.enc_mask = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=2)
+            self.pre_process = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=2)
             self.encoder = nn.Sequential(
                 nn.BatchNorm2d(num_features=8),
                 nn.LeakyReLU(),
@@ -25,15 +25,16 @@ class UBranch(nn.Module):
                 nn.BatchNorm2d(num_features=128),
                 nn.LeakyReLU()
             )
+
         def forward(self, x, mask):
             x = self.pre_process(x)
-            mask = self.mask_conv(mask)
-            roi = x*mask
+            roi = x*self.enc_mask(mask)
             return self.encoder(roi)
 
     class Decode(nn.Module):
         def __init__(self):
             super().__init__()
+            self.dec_mask = nn.Conv2d(in_channels=1, out_channels=8, kernel_size=5, stride=1, padding=2)
             self.decoder = nn.Sequential(
                 nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=5, stride=2, padding=2,
                                    output_padding=1),
@@ -49,14 +50,18 @@ class UBranch(nn.Module):
                 nn.LeakyReLU(),
                 nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=5, stride=2, padding=2,
                                    output_padding=1),
+            )
+            self.post_process = nn.Sequential(
                 nn.BatchNorm2d(num_features=8),
                 nn.LeakyReLU(),
-                nn.ConvTranspose2d(in_channels=8, out_channels=1, kernel_size=5, stride=2, padding=2, output_padding=1),
-                nn.Conv2d(in_channels=1, out_channels=1, kernel_size=1, stride=1, padding=0)
+                nn.ConvTranspose2d(in_channels=8, out_channels=1, kernel_size=5, stride=1, padding=2, output_padding=0),
+                nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding=1)
             )
-        def forward(self, x):
+
+        def forward(self, x, mask):
             x = self.decoder(x)
-            return x
+            roi = x*self.dec_mask(mask)
+            return self.post_process(roi)
 
     def __init__(self):
         super().__init__()
@@ -65,5 +70,5 @@ class UBranch(nn.Module):
 
     def forward(self, x, mask):
         x = self.enc(x, mask)
-        x = self.dec(x)
+        x = self.dec(x, mask)
         return x
