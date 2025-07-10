@@ -65,7 +65,7 @@ class ProcessNV():
             scale_factor = prediction.std()/feedback.std()
             feedback = feedback*scale_factor
             loss = self.loss_fn(self.xyz[:, 0:1, :, :], feedback[:, 0:1, :, :]) #/(1e-18 / 9.27e-24)
-
+#
             self.losses.update({epoch: loss.item()})
             loss.backward()
             self.optimizer.step()
