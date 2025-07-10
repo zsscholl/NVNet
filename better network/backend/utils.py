@@ -42,6 +42,21 @@ class LivePlot():
         self.fig.canvas.flush_events()
         plt.pause(0.001)
 
+class PlotML():
+    def __init__(self, input):
+        self.fig, self.ax = plt.subplots(1, 3)
+        self.stray = self.ax[0].imshow(input[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.mag = self.ax[1].imshow(input[0,0].cpu().detach().numpy(), cmap='bwr')
+        self.rec = self.ax[2].imshow(input[0,0].cpu().detach().numpy(), cmap='bwr')
+
+    def Render(self, model_output, propagated_output):
+        super().__init__()
+        self.mag.set_data(model_output[0,0].cpu().detach().numpy())
+        self.rec.set_data(propagated_output[0,0].cpu().detach().numpy())
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        plt.pause(0.001)
+
 def toNumpy(tensor):
     return np.squeeze(tensor.cpu().detach().numpy())
 

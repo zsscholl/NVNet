@@ -7,19 +7,15 @@ from backend.utils import *
 from train import *
 import scipy as scp
 
-transform = ForwardTransform(300)
-stray_field = transform.NVtoStray(TORCH_IMRE)
-np_stray = toNumpy(stray_field)
-rebuild = stray_field[:, 0, :, :]*transform.nv_x + stray_field[:, 1, :, :]*transform.nv_y + stray_field[:, 2, :, :]*transform.nv_z
-rebuild = rebuild.unsqueeze(0)
-
-# fig, ax = plt.subplots(1, 3)
-# ax[0].imshow(np_stray[0], cmap='bwr')
-# ax[1].imshow(np_stray[1], cmap='bwr')
-# ax[2].imshow(np_stray[2], cmap='bwr')
-# plt.show()
-
-fig, ax = plt.subplots(1, 2)
-ax[0].imshow(toNumpy(TORCH_IMRE)[120:200, 100:180])
-ax[1].imshow(toNumpy(rebuild)[120:200, 100:180])
-plt.show()
+# data = TORCH_DATA[:, :, 100:155, 100:155]
+transform = ForwardTransform(256)
+MAG_X = TORCH_MAG[:, 0, :, :]
+MAG_Y = TORCH_MAG[:, 1, :, :]
+NEW_MAG_X = torch.cat([MAG_X, torch.zeros_like(MAG_X), torch.zeros_like(MAG_X)], dim=0).unsqueeze(0)
+NEW_MAG_Y = torch.cat([torch.zeros_like(MAG_Y), MAG_Y, torch.zeros_like(MAG_Y)], dim=0).unsqueeze(0)
+rebuild_x = transform.StrayFromMag(NEW_MAG_X)
+rebuild_y = transform.StrayFromMag(NEW_MAG_Y)
+plot_data_x = toNumpy(rebuild_x)
+plot_data_y = toNumpy(rebuild_y)
+plot_magnetic_field_map(plot_data_x[0], 'x')
+plot_magnetic_field_map(plot_data_y[1], 'y')

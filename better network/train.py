@@ -84,4 +84,4 @@ class ProcessNV():
         plt.show()
 
 # test = ProcessNV(TORCH_DATA, 5000, is_nv=False, display_live_graphs=True)
-nv_test = ProcessNV(TORCH_IMRE, 5000, is_nv=True, display_live_graphs=True)
+# nv_test = ProcessNV(TORCH_IMRE, 5000, is_nv=True, display_live_graphs=True)
