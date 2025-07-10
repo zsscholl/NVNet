@@ -3,6 +3,7 @@ import torch.nn as nn
 from backend.config import *
 from backend.utils import *
 from backend.model import *
+from backend.model2 import *
 from backend.data_initializer import *
 from backend.forward_transformation import *
 import torchmetrics
@@ -30,7 +31,7 @@ matplotlib.use('TkAgg') #Necessary for live viewing of model progress (at least 
 class ProcessNV():
     def __init__(self, dataset, epochs, is_nv=False, display_live_graphs=False):
         super().__init__()
-        self.model = SmartNet().to(REC_CONFIG['DEVICE'])
+        self.model = TwoBranches().to(REC_CONFIG['DEVICE'])
         self.loss_fn = REC_CONFIG['ML_PARAMS']['LOSS_FUNCTION']
         self.losses = dict()
         self.optimizer = REC_CONFIG['ML_PARAMS']['OPTIMIZER'](self.model.parameters())
@@ -54,14 +55,16 @@ class ProcessNV():
             self.xyz = self.propagator.NVtoStray(self.data).to(device=REC_CONFIG['DEVICE'])
             graph = LivePlot(self.xyz, slice_start, slice_end)
 
+        self.x = self.xyz[:, 0, :, :].unsqueeze(0)
+        self.y = self.xyz[:, 1, :, :].unsqueeze(0)
+
         for epoch in tqdm(range(epochs)):
             self.optimizer.zero_grad()
-
-            prediction = self.model(self.xyz)
+            prediction = self.model(self.x, self.y)
             feedback = self.propagator.StrayFromMag(prediction)
             scale_factor = prediction.std()/feedback.std()
             feedback = feedback*scale_factor
-            loss = self.loss_fn(self.xyz[:, 0:1, :, :], feedback[:, 0:1, :, :])/(1e-18 / 9.27e-24)
+            loss = self.loss_fn(self.xyz[:, 0:1, :, :], feedback[:, 0:1, :, :]) #/(1e-18 / 9.27e-24)
 
             self.losses.update({epoch: loss.item()})
             loss.backward()
@@ -75,7 +78,7 @@ class ProcessNV():
 
         self.model.eval()
         with torch.no_grad():
-            prediction = self.model(self.xyz)
+            prediction = self.model(self.x, self.y)
             feedback = self.propagator.StrayFromMag(prediction)
         graph.Render(prediction, feedback)
         plt.show()
