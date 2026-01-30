@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision.ops.roi_pool import RoIPool
-import matplotlib.pyplot as plt
-from ansatz.backend import config, utils
+from ansatz.backend import utils
 
 kernels = [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
 strides = [1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1]

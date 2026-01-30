@@ -1,0 +1,47 @@
+from dipNV.backend.packages import *
+
+clov_25 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_clov_rot0_standoff25.json')
+clov_50 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_clov_rot0_standoff50.json')
+clov_75 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_clov_rot0_standoff75.json')
+clov_100 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_clov_rot0_standoff100.json')
+clov_125 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_clov_rot0_standoff125.json')
+dip_25 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_dip_rot0_standoff25.json')
+dip_50 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_dip_rot0_standoff50.json')
+dip_75 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_dip_rot0_standoff75.json')
+dip_100 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_dip_rot0_standoff100.json')
+dip_125 = open(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\QOIs\QOI_102325_dip_rot0_standoff125.json')
+
+clov_25_QOI = json.load(clov_25)
+clov_50_QOI = json.load(clov_50)
+clov_75_QOI = json.load(clov_75)
+clov_100_QOI = json.load(clov_100)
+clov_125_QOI = json.load(clov_125)
+dip_25_QOI = json.load(dip_25)
+dip_50_QOI = json.load(dip_50)
+dip_75_QOI = json.load(dip_75)
+dip_100_QOI = json.load(dip_100)
+dip_125_QOI = json.load(dip_125)
+
+clov_25_l2_err = 1e9*np.asarray(list(clov_25_QOI['L2_LOSS'].values()))
+clov_50_l2_err = 1e9*np.asarray(list(clov_50_QOI['L2_LOSS'].values()))
+clov_75_l2_err = 1e9*np.asarray(list(clov_75_QOI['L2_LOSS'].values()))
+clov_100_l2_err = 1e9*np.asarray(list(clov_100_QOI['L2_LOSS'].values()))
+clov_125_l2_err = 1e9*np.asarray(list(clov_125_QOI['L2_LOSS'].values()))
+dip_25_l2_err = 1e9*np.asarray(list(dip_25_QOI['L2_LOSS'].values()))
+dip_50_l2_err = 1e9*np.asarray(list(dip_50_QOI['L2_LOSS'].values()))
+dip_75_l2_err = 1e9*np.asarray(list(dip_75_QOI['L2_LOSS'].values()))
+dip_100_l2_err = 1e9*np.asarray(list(dip_100_QOI['L2_LOSS'].values()))
+dip_125_l2_err = 1e9*np.asarray(list(clov_125_QOI['L2_LOSS'].values()))
+
+standoff = [25, 50, 75, 100, 125]
+clov_l2 = [clov_25_l2_err[-1], clov_50_l2_err[-1], clov_75_l2_err[-1], clov_100_l2_err[-1], clov_125_l2_err[-1]]
+dip_l2 = [dip_25_l2_err[-1], dip_50_l2_err[-1], dip_75_l2_err[-1], dip_100_l2_err[-1], dip_125_l2_err[-1]]
+print(dip_l2[0], dip_l2[-1])
+# plt.scatter(standoff, clov_l2, color='red', label='Landau domain')
+plt.scatter(standoff, dip_l2, color='blue', label='Dipole domain')
+plt.xlabel('Standoff (nm)', fontsize=12)
+plt.ylabel('$L_2$ Error (nT$^2$)', fontsize=12)
+plt.locator_params(axis='x', nbins=5)
+# plt.legend()
+plt.savefig('dipole_standoff.png', dpi=300)
+plt.show()
