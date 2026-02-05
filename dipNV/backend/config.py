@@ -21,7 +21,7 @@ class dataLoader():
         self.CONFIG['ML'] = dict()
         self.CONFIG['ML']['DEPTH'] = 1
         self.CONFIG['ML']['EPOCHS'] = 10000
-        self.CONFIG['ML']['L2'] = 1
+        self.CONFIG['ML']['MSE'] = 1
         self.CONFIG['ML']['INIT_LR'] = 0.001
         self.CONFIG['ML']['DISPLAY_RATE'] = 100
         self.CONFIG['ML']['SAVE_NV'] = False

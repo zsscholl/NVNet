@@ -13,13 +13,13 @@ class TrainDIP(nn.Module):
         torch.manual_seed(42)
         self.model = NVNet(loaded.CONFIG['ML']['DEPTH'], loaded.CONFIG['ML']['DO_CLAMPED_RELU']).to(device=loaded.device)
         self.fm = forwardModel(loaded)
-        self.L2loss = nn.MSELoss()
+        self.MSEloss = nn.MSELoss()
         self.optim = torch.optim.AdamW(self.model.parameters(), lr=loaded.CONFIG['ML']['INIT_LR'])
         self.sched = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optim, patience=30, factor=0.5, threshold=1e-9)
 
         # SETTING UP A DICT TO SAVE QUANTITIES OF INTEREST
         self.QOI = dict()
-        self.QOI['L2_LOSS'] = dict()
+        self.QOI['MSE_LOSS'] = dict()
         self.QOI['DIV_LOSS'] = dict()
         self.QOI['REL_ERR'] = dict()
         self.QOI['AVG_MAG'] = dict()
@@ -55,9 +55,9 @@ class TrainDIP(nn.Module):
             forward_stray = self.fm.propagateMag(output)
 
             # COMPUTING LOSS AND OTHER QOI'S
-            L2loss = loaded.CONFIG['ML']['L2']*self.L2loss(forward_stray, self.stray)
-            rel_err = L2loss.item()/torch.mean(self.stray**2)
-            SNR = 10*torch.log10(torch.mean(forward_stray**2)/L2loss)
+            MSEloss = loaded.CONFIG['ML']['MSE']*self.MSEloss(forward_stray, self.stray)
+            rel_err = MSEloss.item()/torch.mean(self.stray**2)
+            SNR = 10*torch.log10(torch.mean(forward_stray**2)/MSEloss)
             x_mask = self.mask[:, 0, :, :].squeeze() != 0
             y_mask = self.mask[:, 1, :, :].squeeze() != 100
             x_mag_roi = output[0, 0, x_mask]
@@ -66,19 +66,19 @@ class TrainDIP(nn.Module):
                 avg_mag = torch.mean(torch.abs(x_mag_roi))
             else:
                 avg_mag = torch.mean(torch.sqrt(x_mag_roi**2 + y_mag_roi**2))
-            loss = L2loss
-            self.QOI['L2_LOSS'].update({epoch: L2loss.item()})
+            loss = MSEloss
+            self.QOI['MSE_LOSS'].update({epoch: MSEloss.item()})
             self.QOI['REL_ERR'].update({epoch: rel_err.item()})
             self.QOI['AVG_MAG'].update({epoch: avg_mag.item()})
             self.QOI['SNR'].update({epoch: SNR.item()})
 
             # CLOSING THE LOOP
-            L2loss.backward()
+            MSEloss.backward()
             self.optim.step()
             self.sched.step(loss.item())
             if loaded.CONFIG['ML']['DISPLAY_RATE'] is not None:
                 if epoch % loaded.CONFIG['ML']['DISPLAY_RATE'] == 0:
-                    print(f'Epoch: {epoch}, L2Loss: {L2loss.item()}, RelativeError: {rel_err.item()}'
+                    print(f'Epoch: {epoch}, MSELoss: {MSEloss.item()}, RelativeError: {rel_err.item()}'
                           +'\n' + f'LR: {self.sched.get_last_lr()}, avg_mag: {avg_mag}, SNR: {SNR}')
 
                     graph.Render(output, forward_stray)
@@ -95,7 +95,7 @@ class EvalDIP():
         self.model = model.eval()
         self.fm = forwardModel(loaded)
         # self.stray = self.fm.deprojectNV()
-        self.stray = deprojector(loaded).iterative_deprojection(5000, 0.001, 300)
+        self.stray = deprojector(loaded).iterative_deprojection(6000, 0.001, 300)
         self.input = torch.load(f'{ROOT}'+f'/dipNV/backend/dip_input_512.pt')
         self.mask = None
         if loaded.source_mask is not None:

@@ -53,36 +53,37 @@ CLOVER.CONFIG['DX'] = (1.6030401219940295e-6)/800
 CLOVER.CONFIG['K_MIN'] = 2*torch.pi/(1e-6)
 CLOVER.CONFIG['NV']['THETA']= np.deg2rad(0)
 CLOVER.CONFIG['NV']['PHI'] = np.deg2rad(54.75)
-CLOVER.CONFIG['ML']['L2'] = 1
+CLOVER.CONFIG['ML']['MSE'] = 1
 CLOVER.CONFIG['ML']['DIV'] = 0 #1e-15
-CLOVER.CONFIG['ML']['EPOCHS'] = 8000
+CLOVER.CONFIG['ML']['EPOCHS'] = 4000
 CLOVER.CONFIG['ML']['DEPTH'] = 1
 CLOVER.CONFIG['ML']['INIT_LR'] = 0.00075
-CLOVER.CONFIG['ML']['DISPLAY_RATE'] = 30
+CLOVER.CONFIG['ML']['DISPLAY_RATE'] = None
 CLOVER.CONFIG['ML']['SAVE_NV'] = False
 CLOVER.CONFIG['ML']['DO_CLAMPED_RELU'] = False
 CLOVER.CONFIG['MAT_PARAMS']['THICKNESS'] = 25e-9
 CLOVER.CONFIG['TEST_K_CUTOFF'] = 0.5*2*torch.pi/(50e-9)
+# for z in range(4):
+#     for h in range(4):
+        # ROT = h*45
+ROT = 0
+standoff = 50
+mag_mask_x = toTorch(create_diagonal_mask(sim_mag.shape[-1], 0))
+mag_mask_y = toTorch(create_diagonal_mask(sim_mag.shape[-1], 90))
+mag_mask = torch.cat([mag_mask_x, mag_mask_y, torch.zeros_like(mag_mask_y)], dim=1)
+mask_tensor = sim_mag * mag_mask
+mask_tensor = tv.transforms.GaussianBlur(121, 60)(mask_tensor)
+mask_tensor = tv.transforms.functional.rotate(mask_tensor, angle=ROT)
+CLOVER.source_mask = mask_tensor.to(CLOVER.device)
+# standoff = 25+25*z
+CLOVER.CONFIG['NV']['STANDOFF'] = standoff*1e-9
+CLOVER.CONFIG['SAVE_NAME'] = f'februn2_clov_rot{ROT}_{standoff}nm'
+CLOVER.CONFIG['K_CUTOFF'] = 2 * torch.pi / (standoff*1e-9)
+# test = TrainDIP(CLOVER)
 
-for n in range(4):
-    for h in range(5):
-        ROT = n*45
-        mag_mask_x = toTorch(create_diagonal_mask(sim_mag.shape[-1], 0))
-        mag_mask_y = toTorch(create_diagonal_mask(sim_mag.shape[-1], 90))
-        mag_mask = torch.cat([mag_mask_x, mag_mask_y, torch.zeros_like(mag_mask_y)], dim=1)
-        mask_tensor = sim_mag * mag_mask
-        mask_tensor = tv.transforms.GaussianBlur(121, 60)(mask_tensor)
-        mask_tensor = tv.transforms.functional.rotate(mask_tensor, angle=ROT)
-        CLOVER.source_mask = mask_tensor.to(CLOVER.device)
-        standoff = 25*h+25
-        CLOVER.CONFIG['NV']['STANDOFF'] = standoff*1e-9
-        CLOVER.CONFIG['SAVE_NAME'] = f'012726_clov_rot{ROT}_{standoff}nm'
-        CLOVER.CONFIG['K_CUTOFF'] = 2 * torch.pi / (standoff*1e-9)
-        test = TrainDIP(CLOVER)
-
-# model = NVNet(CLOVER.CONFIG['ML']['DEPTH'], False).to(device=CLOVER.device)
-# model.load_state_dict(torch.load(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\models\102425_clov_225epochs.pth', weights_only=True))
-# EvalDIP(model, CLOVER)
+model = NVNet(CLOVER.CONFIG['ML']['DEPTH'], False).to(device=CLOVER.device)
+model.load_state_dict(torch.load(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\models\februn2_clov_rot0_50nm.pth', weights_only=True))
+EvalDIP(model, CLOVER)
 # overseer = overseer(CLOVER)
 # stray = overseer.iterative_deprojection(1500, 0.01, 500)
 # reproj = overseer.reproject(stray)
@@ -108,7 +109,6 @@ for n in range(4):
 # plt.imshow(toNumpy(reproj), cmap='bwr')
 # plt.colorbar()
 # plt.show()
-
 
 # forward_stray = fm.propagateMag(analytic_mag)
 # print(nn.MSELoss()(forward_stray, stray)/torch.mean(torch.abs(stray)))

@@ -45,9 +45,9 @@ class NVNet(nn.Module):
             self.encode = nn.Sequential(
                 NVNet.EncoderBlock(1, 8*self.depth),
                 NVNet.EncoderBlock(8*self.depth, 16*self.depth),
-                NVNet.EncoderBlock(16*self.depth, 32*self.depth),
-                NVNet.EncoderBlock(32*self.depth, 64*self.depth),
-                NVNet.EncoderBlock(64*self.depth, 128*self.depth)
+                # NVNet.EncoderBlock(16*self.depth, 32*self.depth),
+                # NVNet.EncoderBlock(32*self.depth, 64*self.depth),
+                # NVNet.EncoderBlock(64*self.depth, 128*self.depth)
             )
 
         def forward(self, x):
@@ -58,9 +58,9 @@ class NVNet(nn.Module):
             super().__init__()
             self.depth = depth
             self.decode = nn.Sequential(
-                NVNet.DecoderBlock(128*self.depth, 64*self.depth),
-                NVNet.DecoderBlock(64*self.depth, 32*self.depth),
-                NVNet.DecoderBlock(32*self.depth, 16*self.depth),
+                # NVNet.DecoderBlock(128*self.depth, 64*self.depth),
+                # NVNet.DecoderBlock(64*self.depth, 32*self.depth),
+                # NVNet.DecoderBlock(32*self.depth, 16*self.depth),
                 NVNet.DecoderBlock(16*self.depth, 8*self.depth),
                 NVNet.DecoderBlock(8*self.depth, 1)
             )
