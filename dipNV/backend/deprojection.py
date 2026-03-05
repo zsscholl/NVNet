@@ -4,6 +4,7 @@ from dipNV.backend.packages import *
 class deprojector(nn.Module):
     def __init__(self, loaded):
         super().__init__()
+        # test
         self.raw = loaded.nv_data
         self.nv_fft = torch.tile(torch.fft.fft2(self.raw), (2, 2))
         self.device = loaded.device

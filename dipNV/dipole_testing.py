@@ -45,34 +45,29 @@ DIPOLE.CONFIG['ML']['DEPTH'] = 1
 DIPOLE.CONFIG['ML']['INIT_LR'] = 0.0001
 DIPOLE.CONFIG['MAT_PARAMS']['THICKNESS'] = 25e-9
 DIPOLE.CONFIG['ML']['EPOCHS'] = 4000
-DIPOLE.CONFIG['ML']['DISPLAY_RATE'] = 30
+DIPOLE.CONFIG['ML']['DISPLAY_RATE'] = None
 DIPOLE.CONFIG['ML']['SAVE_NV'] = False
 DIPOLE.CONFIG['ML']['DO_CLAMPED_RELU'] = False
 DIPOLE.CONFIG['K_CUTOFF'] = 0.5*2*torch.pi/(50e-9)
 DIPOLE.CONFIG['TEST_K_CUTOFF'] = 2*torch.pi/(1e-6)
 
-# for z in range(4):
-#     for n in range(4):
-#         standoff = 25+25*z
-standoff = 50
-        # ROT=n*45
-ROT = 0
-sim_mag = toTorch(magnetization).squeeze(0)
-sim_mag = torch.where(sim_mag != 0, torch.ones_like(sim_mag), torch.zeros_like(sim_mag))
-sim_mag = transform_mask(sim_mag, 2, 0)
-sim_mag[:, 0:1, :, :] = -sim_mag[:, 0:1, :, :]
-sim_mag[:, 1:, :, :] = torch.zeros_like(sim_mag[:, 1:, :, :])
-sim_mag = tv.transforms.GaussianBlur(91, 40)(sim_mag)
-sim_mag = tv.transforms.functional.rotate(sim_mag, angle=ROT)
-DIPOLE.source_mask = sim_mag.to(DIPOLE.device)
-DIPOLE.CONFIG['NV']['STANDOFF'] = standoff*1e-9
-DIPOLE.CONFIG['SAVE_NAME'] = f'februn2_dip_rot{ROT}_standoff{standoff}nm'
-DIPOLE.CONFIG['K_CUTOFF'] = 0.5*2*torch.pi/(standoff*1e-9)
-        # test = TrainDIP(DIPOLE)
-
-model = NVNet(DIPOLE.CONFIG['ML']['DEPTH'], False).to(DIPOLE.device)
-model.load_state_dict(torch.load(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\models\februn2_dip_rot0_standoff50nm.pth'))
-EvalDIP(model, DIPOLE)
+for z in range(10):
+    standoff = 25+10*z
+    ROT = 0
+    sim_mag = toTorch(magnetization).squeeze(0)
+    sim_mag = torch.where(sim_mag != 0, torch.ones_like(sim_mag), torch.zeros_like(sim_mag))
+    sim_mag = transform_mask(sim_mag, 2, 0)
+    sim_mag[:, 0:1, :, :] = -sim_mag[:, 0:1, :, :]
+    sim_mag[:, 1:, :, :] = torch.zeros_like(sim_mag[:, 1:, :, :])
+    sim_mag = tv.transforms.GaussianBlur(91, 40)(sim_mag)
+    sim_mag = tv.transforms.functional.rotate(sim_mag, angle=ROT)
+    DIPOLE.source_mask = sim_mag.to(DIPOLE.device)
+    DIPOLE.CONFIG['NV']['STANDOFF'] = standoff*1e-9
+    DIPOLE.CONFIG['SAVE_NAME'] = f'februn3_dip_rot{ROT}_standoff{standoff}nm'
+    DIPOLE.CONFIG['K_CUTOFF'] = 0.5*2*torch.pi/(standoff*1e-9)
+    model = NVNet(DIPOLE.CONFIG['ML']['DEPTH'], False).to(DIPOLE.device)
+    model.load_state_dict(torch.load(f'C:/Users/zande/PycharmProjects/ANL2025/dipNV/output/models/februn3_dip_rot{ROT}_standoff{standoff}nm.pth'))
+    EvalDIP(model, DIPOLE)
 
 # simulated_mag = np.load(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\data\clover_state.npy')[:, 2, :, :]
 # simulated_stray = np.load(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\data\clover_stray_field.npy')[:, 22, :, :]
