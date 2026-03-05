@@ -52,7 +52,7 @@ ax0.plot([0, 1], [0, 0], transform=ax0.transAxes, **kwargs)
 ax1.plot([0, 1], [1, 1], transform=ax1.transAxes, **kwargs)
 fig.supylabel(r'Mean Square Error ($\mu$T$^2$)', fontsize=12)
 fig.supxlabel('Epoch', fontsize=12)
-plt.savefig('landau_rot0_50nm.png', bbox_inches='tight', dpi=300, facecolor='white')
+plt.savefig('landau_error_curves.png', bbox_inches='tight', dpi=300, facecolor='white')
 plt.show()
 
 snr_array = [SNR_0[-1], SNR_45[-1], SNR_90[-1], SNR_135[-1]]

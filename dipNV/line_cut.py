@@ -112,13 +112,14 @@ dip_rmse = np.sqrt(np.mean((dip_lc_b-dip_lc_am)**2))
 dip_xrange = 1.124*np.arange(0, 512)
 
 plt.scatter(dip_xrange, 1e3*dip_lc_b, c='blue', s=1, label=r'$B_{stray}$')
-plt.scatter(dip_xrange, 1e3*dip_lc_am, c='red', s=1, label=r'$AM_{DIP}$')
+# plt.scatter(dip_xrange, 1e3*dip_lc_am, c='red', s=1, label=r'$AM_{DIP}$')
 plt.ylabel(r'Stray Field Magnitude (mT)', fontsize=14)
 plt.xlabel(r'Position (nm)', fontsize=14)
 plt.legend(loc='best', fontsize=12, markerscale=3)
 plt.savefig('dipole_linecut_nv.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-print(np.max(dip_m_nonzero), np.max(clov_m_nonzero))
+# print(np.max(dip_m_nonzero), np.max(clov_m_nonzero))
 
-
+# plt.imsave('dipole_reproj.png', dip_b_reproj, cmap='viridis', vmin=-np.abs(np.max(dip_b_reproj)), vmax=np.abs(np.max(dip_b_reproj)))
+# plt.imsave('landau_reproj.png', clov_b_reproj, cmap='viridis', vmin=-np.abs(np.max(clov_b_reproj)), vmax=np.abs(np.max(clov_b_reproj)))

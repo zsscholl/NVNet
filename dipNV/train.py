@@ -28,7 +28,6 @@ class TrainDIP(nn.Module):
         # LOADING DATA AND MASKING
         self.stray = None
         if loaded.test_stray is None:
-            # self.stray = self.fm.deprojectNV()
             self.stray = deprojector(loaded).iterative_deprojection(2000, 0.01, 500)
         if loaded.test_stray is not None:
             self.stray = loaded.test_stray
@@ -94,8 +93,10 @@ class EvalDIP():
         torch.manual_seed(42)
         self.model = model.eval()
         self.fm = forwardModel(loaded)
-        # self.stray = self.fm.deprojectNV()
-        self.stray = deprojector(loaded).iterative_deprojection(6000, 0.001, 300)
+        if loaded.test_stray is not None:
+            self.stray = loaded.test_stray
+        else:
+            self.stray = deprojector(loaded).iterative_deprojection(6000, 0.001, 300)
         self.input = torch.load(f'{ROOT}'+f'/dipNV/backend/dip_input_512.pt')
         self.mask = None
         if loaded.source_mask is not None:

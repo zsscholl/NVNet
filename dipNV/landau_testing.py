@@ -63,27 +63,23 @@ CLOVER.CONFIG['ML']['SAVE_NV'] = False
 CLOVER.CONFIG['ML']['DO_CLAMPED_RELU'] = False
 CLOVER.CONFIG['MAT_PARAMS']['THICKNESS'] = 25e-9
 CLOVER.CONFIG['TEST_K_CUTOFF'] = 0.5*2*torch.pi/(50e-9)
-# for z in range(4):
-#     for h in range(4):
-        # ROT = h*45
-ROT = 0
-standoff = 50
-mag_mask_x = toTorch(create_diagonal_mask(sim_mag.shape[-1], 0))
-mag_mask_y = toTorch(create_diagonal_mask(sim_mag.shape[-1], 90))
-mag_mask = torch.cat([mag_mask_x, mag_mask_y, torch.zeros_like(mag_mask_y)], dim=1)
-mask_tensor = sim_mag * mag_mask
-mask_tensor = tv.transforms.GaussianBlur(121, 60)(mask_tensor)
-mask_tensor = tv.transforms.functional.rotate(mask_tensor, angle=ROT)
-CLOVER.source_mask = mask_tensor.to(CLOVER.device)
-# standoff = 25+25*z
-CLOVER.CONFIG['NV']['STANDOFF'] = standoff*1e-9
-CLOVER.CONFIG['SAVE_NAME'] = f'februn2_clov_rot{ROT}_{standoff}nm'
-CLOVER.CONFIG['K_CUTOFF'] = 2 * torch.pi / (standoff*1e-9)
-# test = TrainDIP(CLOVER)
-
-model = NVNet(CLOVER.CONFIG['ML']['DEPTH'], False).to(device=CLOVER.device)
-model.load_state_dict(torch.load(r'C:\Users\zande\PycharmProjects\ANL2025\dipNV\output\models\februn2_clov_rot0_50nm.pth', weights_only=True))
-EvalDIP(model, CLOVER)
+for z in range(10):
+    ROT = 0
+    standoff = 25+10*z
+    mag_mask_x = toTorch(create_diagonal_mask(sim_mag.shape[-1], 0))
+    mag_mask_y = toTorch(create_diagonal_mask(sim_mag.shape[-1], 90))
+    mag_mask = torch.cat([mag_mask_x, mag_mask_y, torch.zeros_like(mag_mask_y)], dim=1)
+    mask_tensor = sim_mag * mag_mask
+    mask_tensor = tv.transforms.GaussianBlur(121, 60)(mask_tensor)
+    mask_tensor = tv.transforms.functional.rotate(mask_tensor, angle=ROT)
+    CLOVER.source_mask = mask_tensor.to(CLOVER.device)
+    CLOVER.CONFIG['NV']['STANDOFF'] = standoff*1e-9
+    CLOVER.CONFIG['SAVE_NAME'] = f'februn3_clov_rot{ROT}_{standoff}nm'
+    CLOVER.CONFIG['K_CUTOFF'] = 2 * torch.pi / (standoff*1e-9)
+    # test = TrainDIP(CLOVER)
+    model = NVNet(CLOVER.CONFIG['ML']['DEPTH'], False).to(device=CLOVER.device)
+    model.load_state_dict(torch.load(f'C:/Users/zande/PycharmProjects/ANL2025/dipNV/output/models/februn3_clov_rot{ROT}_{standoff}nm.pth', weights_only=True))
+    EvalDIP(model, CLOVER)
 # overseer = overseer(CLOVER)
 # stray = overseer.iterative_deprojection(1500, 0.01, 500)
 # reproj = overseer.reproject(stray)
